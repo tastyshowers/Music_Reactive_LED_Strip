@@ -8,10 +8,12 @@
 import time
 from rpi_ws281x import *
 import argparse
-
+import sounddevice as sd
+import numpy as np
+import RPi.GPIO as GPIO
 # LED strip configuration:
 LED_COUNT      = 30     # Number of LED pixels.
-LED_PIN        = 21      # GPIO pin connected to the pixels (18 uses PWM!).
+LED_PIN        = 12      # GPIO pin connected to the pixels (18 uses PWM!).
 #LED_PIN        = 10      # GPIO pin connected to the pixels (10 uses SPI /dev/spidev0.0).
 LED_FREQ_HZ    = 800000  # LED signal frequency in hertz (usually 800khz)
 LED_DMA        = 10      # DMA channel to use for generating a signal (try 10)
@@ -95,7 +97,6 @@ if __name__ == '__main__':
         print('Use "-c" argument to clear LEDs on exit')
 
     try:
-
         while True:
             print ('Color wipe animations.')
             colorWipe(strip, Color(255, 0, 0))  # Red wipe
@@ -113,3 +114,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         if args.clear:
             colorWipe(strip, Color(0,0,0), 10)
+    GPIO.cleanup()
