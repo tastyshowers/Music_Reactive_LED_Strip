@@ -7,7 +7,7 @@ from rpi_ws281x import *
 import time
 
 # LED strip configuration:
-LED_COUNT      = 30     # Number of LED pixels.
+LED_COUNT      = 32     # Number of LED pixels.
 LED_PIN        = 12      # GPIO pin connected to the pixels (18 uses PWM!).
 #LED_PIN        = 10      # GPIO pin connected to the pixels (10 uses SPI /dev>
 LED_FREQ_HZ    = 800000  # LED signal frequency in hertz (usually 800khz)
@@ -21,6 +21,11 @@ strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, 
 strip.begin()
 #variables for updating strip in timely manner
 last_update = time.time()
+#fade function
+red = 255
+pacer = 0
+
+
 def clearLights(strip):
 	for i in range (0, LED_COUNT):
 		strip.setPixelColor(i, Color(0,0,0))
@@ -33,26 +38,41 @@ def redToYellowMeter (strip, numLights):
 	strip.show()
 def frontBackRedToYellowMeter (strip, numLights):
 	#front
-	for i in range (0, np.clip(numLights, 0, 16)):
+	for i in range (0, np.clip(numLights, 0, int(LED_COUNT / 2 + 1))):
 		strip.setPixelColor(i, Color(255, np.clip((i * 5), 0, 255), 0))
-	for i in range (np.clip(numLights, 0, 16), 15):
+	for i in range (np.clip(numLights, 0, int(LED_COUNT / 2 + 1)), int(LED_COUNT / 2)):
 		strip.setPixelColor(i, Color(0,0,0))
 	#back
-	for i in range (29, np.clip(29 - numLights, 15, 29), -1):
-		strip.setPixelColor(i, Color(255, np.clip(((29 - i) * 5), 0, 255), 0))
-	for i in range (29 - np.clip(numLights, 0, 16), 14, -1):
+	for i in range (LED_COUNT - 1, np.clip((LED_COUNT - 1) - numLights, int(LED_COUNT / 2), LED_COUNT - 1), -1):
+		strip.setPixelColor(i, Color(255, np.clip((((LED_COUNT - 1) - i) * 5), 0, 255), 0))
+	for i in range ((LED_COUNT - 1) - np.clip(numLights, 0, int(LED_COUNT / 2 + 1)), int(LED_COUNT / 2 - 1), -1):
 		strip.setPixelColor(i, Color(0,0,0))
+	strip.show()
+def fadeMeter (strip, numLights, fade):
+	global red
+	global pacer
+	for i in range (0, LED_COUNT):
+		if (numLights > 0):
+			red = 255
+			strip.setPixelColor(i, Color(red, 0, 0))
+		else:
+			if (pacer % fade == 0):
+				red = 0 if (red == 0) else (red - 1)
+				strip.setPixelColor(i, Color(red, 0, 0))
+	pacer += 1
+	if (pacer > 500):
+		pacer = 0
 	strip.show()
 def volumeToNumLights (indata):
 	volume_norm = np.linalg.norm(indata)
 	adjusted_volume_norm = 100 * volume_norm - 110
-	numLights = int(np.clip(adjusted_volume_norm / 10, 0, 30))
+	numLights = int(np.clip(adjusted_volume_norm / 10, 0, LED_COUNT))
 	return numLights
 def audio_process_input(indata, frmes, times, status):
 	global last_update
 	numLights = volumeToNumLights(indata)
 	if time.time() - last_update > 0.01:
-		frontBackRedToYellowMeter(strip, numLights)
+		fadeMeter(strip, numLights, 2)
 		last_update = time.time()
 try:
 	with sd.InputStream(callback=audio_process_input, device=2):
