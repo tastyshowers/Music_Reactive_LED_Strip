@@ -25,22 +25,34 @@ def clearLights(strip):
 	for i in range (0, LED_COUNT):
 		strip.setPixelColor(i, Color(0,0,0))
 	strip.show()
-def showNumLights (strip, color, numLights):
+def redToYellowMeter (strip, numLights):
 	for i in range (0, numLights):
-		strip.setPixelColor(i, color)
+		strip.setPixelColor(i, Color(255, np.clip((i * 5), 0, 255), 0))
 	for i in range (numLights, LED_COUNT):
+		strip.setPixelColor(i, Color(0,0,0))
+	strip.show()
+def frontBackRedToYellowMeter (strip, numLights):
+	#front
+	for i in range (0, np.clip(numLights, 0, 16)):
+		strip.setPixelColor(i, Color(255, np.clip((i * 5), 0, 255), 0))
+	for i in range (np.clip(numLights, 0, 16), 15):
+		strip.setPixelColor(i, Color(0,0,0))
+	#back
+	for i in range (29, np.clip(29 - numLights, 15, 29), -1):
+		strip.setPixelColor(i, Color(255, np.clip(((29 - i) * 5), 0, 255), 0))
+	for i in range (29 - np.clip(numLights, 0, 16), 14, -1):
 		strip.setPixelColor(i, Color(0,0,0))
 	strip.show()
 def volumeToNumLights (indata):
 	volume_norm = np.linalg.norm(indata)
-	volume_norm *= 1000000000000
-	numLights = int(np.clip((volume_norm / 10000000000 - 100) * 3, 0, 30))
+	adjusted_volume_norm = 100 * volume_norm - 110
+	numLights = int(np.clip(adjusted_volume_norm / 10, 0, 30))
 	return numLights
 def audio_process_input(indata, frmes, times, status):
 	global last_update
 	numLights = volumeToNumLights(indata)
-	if time.time() - last_update > 0.0005:
-		showNumLights(strip, Color(255,0,0), numLights)
+	if time.time() - last_update > 0.01:
+		frontBackRedToYellowMeter(strip, numLights)
 		last_update = time.time()
 try:
 	with sd.InputStream(callback=audio_process_input, device=2):
