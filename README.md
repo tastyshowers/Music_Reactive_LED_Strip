@@ -1,4 +1,4 @@
-# Project Name
+# Music Reactive LED Strip
 
 ## Summary
 The firmware uses a microphone to make and LED strip audio reactive. The purpose of this project was to challenge myself to code with Ubuntu server on
